@@ -1,0 +1,610 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.excel-mapping-info {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.excel-mapping-info h3 {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    font-weight: normal;
+}
+
+.mapping-description {
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.5;
+    background: #fff;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.mapping-table-container {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+}
+
+.mapping-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.mapping-table thead {
+    background: #417690;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.mapping-table thead th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: normal;
+    border-bottom: 1px solid #ddd;
+}
+
+.mapping-table tbody tr {
+    background: white;
+}
+
+.mapping-table tbody tr:hover {
+    background-color: #f5f5f5;
+}
+
+.mapping-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+    color: #333;
+}
+
+.col-letter {
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    background: #79aec8;
+    color: white;
+    text-align: center;
+    min-width: 60px;
+}
+
+.col-imported {
+    color: #28a745;
+    font-weight: normal;
+}
+
+.col-skipped {
+    color: #dc3545;
+    font-style: italic;
+}
+
+.status-imported {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.status-imported::before {
+    content: "●";
+    margin-right: 4px;
+    font-size: 12px;
+}
+
+.status-skipped {
+    display: inline-block;
+    padding: 4px 8px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.status-skipped::before {
+    content: "●";
+    margin-right: 4px;
+    font-size: 12px;
+}
+
+.important-notes {
+    margin-top: 20px;
+    padding: 15px;
+    background: #fefefe;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.important-notes h4 {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1em;
+    font-weight: bold;
+}
+
+.important-notes ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.important-notes li {
+    color: #666;
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.important-notes .highlight {
+    background: #fff3cd;
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-weight: bold;
+    color: #333;
+}
+
+.legend {
+    display: flex;
+    gap: 15px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: normal;
+    border: 1px solid;
+}
+
+.legend-imported {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
+.legend-skipped {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+}
+
+.legend-item::before {
+    content: "●";
+    margin-right: 5px;
+    font-size: 14px;
+}
+
+.process-flow {
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.process-flow h4 {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1em;
+    font-weight: bold;
+}
+
+.process-flow ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.process-flow li {
+    color: #666;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+    .mapping-table-container {
+        max-height: 400px;
+    }
+
+    .legend {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mapping-table td, .mapping-table th {
+        padding: 6px 8px;
+        font-size: 12px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content_title %}
+    {{ block.super }}
+    {% if opts.model_name == 'excelupload' %}
+    <div class="excel-mapping-info">
+        <h3>Excel-Spalten-Zuordnung für Patientenprofile</h3>
+
+        <div class="mapping-description">
+            <strong>Wichtige Information:</strong> Diese Tabelle zeigt Ihnen exakt, wie die Excel-Spalten beim Import
+            den Datenbankfeldern zugeordnet werden. Die Excel-Datei muss <strong>genau diese Spaltenreihenfolge</strong>
+            einhalten, damit die Daten korrekt importiert werden. Die erste Zeile sollte die Spaltenüberschriften enthalten
+            und wird beim Import übersprungen.
+        </div>
+
+        <div class="legend">
+            <div class="legend-item legend-imported">Wird importiert</div>
+            <div class="legend-item legend-skipped">Wird übersprungen</div>
+        </div>
+
+        <div class="process-flow">
+            <h4>Importprozess:</h4>
+            <ol>
+                <li>Excel-Datei hochladen</li>
+                <li>Erste Zeile (Header) wird übersprungen</li>
+                <li>Ab Zeile 2: Jede Zeile wird als ein Patientenprofil verarbeitet</li>
+                <li>Leere Profilnummer (Spalte C) beendet den Import</li>
+                <li>Bestehende Profile werden überschrieben, neue werden erstellt</li>
+            </ol>
+        </div>
+
+        <div class="mapping-table-container">
+            <table class="mapping-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Excel-Spalte</th>
+                        <th style="width: 200px;">Erwarteter Inhalt</th>
+                        <th>Datenbankfeld (models.py)</th>
+                        <th style="width: 120px;">Import-Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="col-letter">A</td>
+                        <td>Button-Nr.</td>
+                        <td class="col-skipped">Wird nicht importiert (nur zur Organisation)</td>
+                        <td class="status-skipped">Übersprungen</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">B</td>
+                        <td>Lfd. Nr.</td>
+                        <td class="col-skipped">Wird nicht importiert (nur zur Organisation)</td>
+                        <td class="status-skipped">Übersprungen</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">C</td>
+                        <td>Profilnr</td>
+                        <td class="col-imported"><strong>profile_number</strong> (Eindeutige Kennung!)</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">D</td>
+                        <td>PCZ IVENA</td>
+                        <td class="col-imported">pcz_ivena</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">E</td>
+                        <td>Kategorie</td>
+                        <td class="col-imported">category</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">F</td>
+                        <td>Erwartete med. Handlung</td>
+                        <td class="col-imported">expected_med_action</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">G</td>
+                        <td>Diagnose</td>
+                        <td class="col-imported">diagnosis</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">H</td>
+                        <td>Blickdiagnose</td>
+                        <td class="col-imported">visual_diagnosis</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">I</td>
+                        <td>Befund</td>
+                        <td class="col-imported">findings</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">J</td>
+                        <td>Symptome</td>
+                        <td class="col-imported">symptoms</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">K</td>
+                        <td>Darstellerhinweise</td>
+                        <td class="col-imported">actor_hints</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">L</td>
+                        <td>Erforderliche Fachrichtung</td>
+                        <td class="col-imported">required_specialty</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">M</td>
+                        <td>GCS von 15</td>
+                        <td class="col-imported">gcs</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">N</td>
+                        <td>SpO2 in %</td>
+                        <td class="col-imported">spo2</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">O</td>
+                        <td>Rekap in Sec.</td>
+                        <td class="col-imported">rekap</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">P</td>
+                        <td>AF/min</td>
+                        <td class="col-imported">resp_rate</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">Q</td>
+                        <td>sys. RR in mmHg</td>
+                        <td class="col-imported">sys_rr</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">R</td>
+                        <td>EKG Monitoring</td>
+                        <td class="col-imported">ekg_monitor</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">S</td>
+                        <td>Rö-Thorax</td>
+                        <td class="col-imported">ro_thorax</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">T</td>
+                        <td>Fast-Sono</td>
+                        <td class="col-imported">fast_sono</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">U</td>
+                        <td>(E-FAST)</td>
+                        <td class="col-imported">e_fast</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">V</td>
+                        <td>Radiologiebefunde</td>
+                        <td class="col-imported">radiology_finds</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">W</td>
+                        <td>Hb Wert mg/dl</td>
+                        <td class="col-imported">hb_value</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">X</td>
+                        <td>Blutkonserven [Stk]</td>
+                        <td class="col-imported">blood_units</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">Y</td>
+                        <td>Roter Behandlungsbereich [J/N]</td>
+                        <td class="col-imported">red_treatment_area</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">Z</td>
+                        <td>Beatmungsplatz [J/N]</td>
+                        <td class="col-imported">ventilation_place</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AA</td>
+                        <td>ITS-Platz [J/N]</td>
+                        <td class="col-imported">icu_place</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AB</td>
+                        <td>Not-OP [J/N]</td>
+                        <td class="col-imported">emergency_op</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AC</td>
+                        <td>OP-Siebe Spezial</td>
+                        <td class="col-imported">op_sieve_special</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AD</td>
+                        <td>OP-Siebe Grundsiebe</td>
+                        <td class="col-imported">op_sieve_basic</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AE</td>
+                        <td>Personalressource Schockraum</td>
+                        <td class="col-imported">personal_resources</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AF</td>
+                        <td>AnästhesieTeam</td>
+                        <td class="col-imported">anesthesia_team</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AG</td>
+                        <td>Personalressource Radiologie</td>
+                        <td class="col-imported">radiology_resources</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AH</td>
+                        <td>Personalressource OP-Achi</td>
+                        <td class="col-imported">op_achi_res</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AI</td>
+                        <td>Personalressource OP-Uchi</td>
+                        <td class="col-imported">op_uchi_res</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AJ</td>
+                        <td>Personalressource OP-Nchi</td>
+                        <td class="col-imported">op_nchi_res</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AK</td>
+                        <td>Medikamente</td>
+                        <td class="col-imported">medications</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AL</td>
+                        <td>Vorversorgung RD</td>
+                        <td class="col-imported">pre_treatment_rd</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AM</td>
+                        <td><strong>Hinweis 1 für HiO</strong></td>
+                        <td class="col-imported"><strong>spare_col1</strong> (HiO-Hinweise)</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AN</td>
+                        <td><strong>Hinweis 2 für HiO</strong></td>
+                        <td class="col-imported"><strong>spare_col2</strong> (HiO-Hinweise)</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AO</td>
+                        <td>Übergabe RD (Feld 1)</td>
+                        <td class="col-skipped">Wird automatisch übersprungen</td>
+                        <td class="status-skipped">Übersprungen</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AP</td>
+                        <td>Übergabe RD (Feld 2)</td>
+                        <td class="col-skipped">Wird automatisch übersprungen</td>
+                        <td class="status-skipped">Übersprungen</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AQ</td>
+                        <td>Übergabe RD (Feld 3)</td>
+                        <td class="col-skipped">Wird automatisch übersprungen</td>
+                        <td class="status-skipped">Übersprungen</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AR</td>
+                        <td>Übergabe RD (Feld 4)</td>
+                        <td class="col-skipped">Wird automatisch übersprungen</td>
+                        <td class="status-skipped">Übersprungen</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AS</td>
+                        <td>Übergabe RD (Feld 5)</td>
+                        <td class="col-skipped">Wird automatisch übersprungen</td>
+                        <td class="status-skipped">Übersprungen</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AT</td>
+                        <td>Übergabe RD (Feld 6)</td>
+                        <td class="col-skipped">Wird automatisch übersprungen</td>
+                        <td class="status-skipped">Übersprungen</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AU</td>
+                        <td>Szenario</td>
+                        <td class="col-imported">scenario_field</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AV</td>
+                        <td>Bemerkung</td>
+                        <td class="col-imported">comment</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AW</td>
+                        <td>Name</td>
+                        <td class="col-imported">lastname</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AX</td>
+                        <td>Vorname</td>
+                        <td class="col-imported">firstname</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                    <tr>
+                        <td class="col-letter">AY</td>
+                        <td>Geburtsdatum</td>
+                        <td class="col-imported">birthdate</td>
+                        <td class="status-imported">✓ Importiert</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="important-notes">
+            <h4>Wichtige Hinweise für Administratoren</h4>
+            <ul>
+                <li>Die <span class="highlight">Profilnummer (Spalte C)</span> ist der Primärschlüssel - sie muss eindeutig sein!</li>
+                <li>Leere Zellen werden als leere Strings in der Datenbank gespeichert (nicht als NULL)</li>
+                <li>Die <span class="highlight">HiO-Hinweise (AM & AN)</span> sind die Felder spare_col1 und spare_col2</li>
+                <li>Spalten <span class="highlight">AO bis AT</span> enthalten "Übergabe RD" Daten und werden bewusst übersprungen</li>
+                <li>Der Import beginnt bei Zeile 2 - Zeile 1 sollte die Spaltenüberschriften enthalten</li>
+                <li>Der Import stoppt, wenn eine leere Profilnummer (Spalte C) gefunden wird</li>
+                <li>Bestehende Profile mit gleicher Profilnummer werden komplett überschrieben</li>
+                <li>Die Datei muss als <span class="highlight">.xlsx</span> Format vorliegen</li>
+                <li>Sehr lange Texte werden automatisch gekürzt, um in die Datenbankfelder zu passen</li>
+                <li>Fehlermeldungen bei einzelnen Zeilen brechen den gesamten Import nicht ab</li>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

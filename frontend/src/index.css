@@ -1,0 +1,222 @@
+/**
+ * Gemeinsame Farb-, Radius- und Statustokens für Tailwind und shadcn/ui.
+ */
+
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================
+   Design-Tokens (Light = Arbeitsfläche, Sidebar separat dunkel)
+   ============================================================ */
+:root {
+  --radius: 0.625rem;
+
+  /* Flächen & Text */
+  --background: #f1f5f9; /* slate-100 – ruhige Arbeitsfläche */
+  --foreground: #0f172a; /* slate-950 – AA-Kontrast */
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Primär = kräftiges Neutral (max. Kontrast für Aktionen) */
+  --primary: #0f172a;
+  --primary-foreground: #f8fafc;
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569; /* slate-600 */
+  --accent: #2563eb; /* blue-600 – EIN Akzent, sparsam */
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --border: #e2e8f0; /* Haarlinie */
+  --input: #cbd5e1; /* Eingabe-Rahmen etwas kräftiger für Kontrast */
+  --ring: #2563eb; /* Fokus */
+
+  /* Semantik */
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --warning: #d97706;
+  --warning-foreground: #ffffff;
+  --info: #2563eb;
+  --info-foreground: #ffffff;
+
+  /* Status */
+  --status-online: #059669;
+  --status-offline: #dc2626;
+  --status-pending: #d97706;
+  --status-syncing: #2563eb;
+
+  /* Triage (medizinischer Standard – Hue unverändert) */
+  --triage-sk1: #f44336;
+  --triage-sk1-foreground: #ffffff;
+  --triage-sk2: #ffc107;
+  --triage-sk2-foreground: #000000;
+  --triage-sk3: #4caf50;
+  --triage-sk3-foreground: #ffffff;
+  --triage-sk4: #2196f3;
+  --triage-sk4-foreground: #ffffff;
+  --triage-dead: #607d8b;
+  --triage-dead-foreground: #ffffff;
+  --triage-unknown: #9e9e9e;
+  --triage-unknown-foreground: #ffffff;
+
+  /* Sidebar (dunkel, hoher Kontrast) */
+  --sidebar: #0b1220;
+  --sidebar-foreground: #cbd5e1;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #2563eb;
+}
+
+/* ============================================================
+   @theme inline — macht die Tokens als Tailwind-Utilities nutzbar
+   (bg-background, text-foreground, border-border, bg-triage-sk1 …)
+   ============================================================ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-status-online: var(--status-online);
+  --color-status-offline: var(--status-offline);
+  --color-status-pending: var(--status-pending);
+  --color-status-syncing: var(--status-syncing);
+
+  --color-triage-sk1: var(--triage-sk1);
+  --color-triage-sk1-foreground: var(--triage-sk1-foreground);
+  --color-triage-sk2: var(--triage-sk2);
+  --color-triage-sk2-foreground: var(--triage-sk2-foreground);
+  --color-triage-sk3: var(--triage-sk3);
+  --color-triage-sk3-foreground: var(--triage-sk3-foreground);
+  --color-triage-sk4: var(--triage-sk4);
+  --color-triage-sk4-foreground: var(--triage-sk4-foreground);
+  --color-triage-dead: var(--triage-dead);
+  --color-triage-dead-foreground: var(--triage-dead-foreground);
+  --color-triage-unknown: var(--triage-unknown);
+  --color-triage-unknown-foreground: var(--triage-unknown-foreground);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ============================================================
+   Schlanker Base-Reset (Preflight-Ergänzung für die shadcn-Primitives).
+   ============================================================ */
+@layer base {
+  /* shadcn-Standard: Default-Rahmenfarbe + Outline-Ring aus Tokens. */
+  * {
+    border-color: var(--border);
+  }
+  html,
+  #root {
+    min-height: 100%;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    min-height: 100%;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Links nur bei expliziter Angabe unterstreichen. */
+  a {
+    text-decoration: none;
+  }
+  /* Fokus-Ring (Tastatur) markenkonform. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Dezentes Scrollbar-Tuning. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  background-clip: content-box;
+}
+
+/* ============================================================
+   iOS PWA (standalone) — Safe-Area-Insets & Overflow-Schutz
+   Im Browser 0px, als installierte App = Notch/Island/Home-Indikator.
+   ============================================================ */
+@layer base {
+  /* Horizontales Bleeding in runde Ecken / Notch-Seite verhindern,
+     ohne position:sticky zu brechen (clip erzeugt keinen Scroll-Container). */
+  #root {
+    overflow-x: clip;
+  }
+  /* Lange Woerter (z. B. E-Mails) umbrechen statt ueber den Rand schieben. */
+  body {
+    overflow-wrap: break-word;
+  }
+}
+
+/* Seitliche Safe-Area global (v. a. Querformat / Notch-Seite). */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

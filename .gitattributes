@@ -1,0 +1,12 @@
+# Zeilenenden vereinheitlichen. Shell-Skripte und Caddyfile MUESSEN LF haben,
+# da sie per Bind-Mount/COPY in Linux-Container gelangen.
+* text=auto eol=lf
+*.sh text eol=lf
+Caddyfile text eol=lf
+*.ps1 text eol=crlf
+
+# Binaerdateien
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

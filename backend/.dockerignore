@@ -1,0 +1,45 @@
+# Version control
+.git
+.gitignore
+
+# Python artifacts
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.pytest_cache
+
+# Environment and secrets
+.env
+.env.*
+
+# Database files
+db.sqlite3
+data/
+alte DB/
+datadump*.json
+
+# Node artifacts
+node_modules/
+package.json
+package-lock.json
+
+# Media uploads (managed via Docker volume)
+media/
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Generated static files
+staticfiles/
+
+# Export scripts
+export_sqlite.py

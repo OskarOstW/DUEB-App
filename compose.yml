@@ -1,0 +1,59 @@
+name: dueb-app-local
+services:
+  db:
+    build: ./database
+    environment:
+      POSTGRES_DB: ${DB_NAME:-dueb}
+      POSTGRES_USER: ${DB_USER:-dueb}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD fehlt}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DEBUG: "True"
+      SITE_URL: ${LOCAL_SITE_URL:-http://127.0.0.1:15173}
+      CORS_ALLOWED_ORIGINS: "http://localhost:15173,http://127.0.0.1:15173,http://localhost:5173,http://127.0.0.1:5173"
+      SECURE_SSL_REDIRECT: "False"
+      EMAIL_HOST: mail
+      EMAIL_PORT: "1025"
+      EMAIL_USE_TLS: "False"
+    ports: ["127.0.0.1:18000:8000"]
+    volumes:
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+  mail:
+    image: axllent/mailpit:v1.29@sha256:757f22b56c1da03570afdb3d259effe5091018008a81bbedc8158cee7e16fdbc
+    ports: ["127.0.0.1:18025:8025"]
+  mail-worker:
+    build: ./backend
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DEBUG: "True"
+      SITE_URL: ${LOCAL_SITE_URL:-http://127.0.0.1:15173}
+      EMAIL_HOST: mail
+      EMAIL_PORT: "1025"
+      EMAIL_USE_TLS: "False"
+    entrypoint: ["python", "manage.py", "process_observer_mail", "--loop"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import pathlib,time; assert time.time()-pathlib.Path('/tmp/dueb-mail-heartbeat').stat().st_mtime < 120"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+volumes:
+  postgres_data:
+  media_data:

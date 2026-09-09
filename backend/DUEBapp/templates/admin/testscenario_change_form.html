@@ -1,0 +1,139 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    .scenario-stats-wrapper {
+      margin-bottom: 20px;
+    }
+
+    .scenario-stats-panel {
+      background: var(--body-bg);
+      border: 1px solid var(--hairline-color);
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .scenario-stats-header {
+      background: var(--darkened-bg);
+      border-bottom: 1px solid var(--hairline-color);
+      border-radius: 6px 6px 0 0;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .scenario-stats-title {
+      margin: 0;
+      color: var(--body-fg);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .scenario-stats-action {
+      white-space: nowrap;
+    }
+
+    .scenario-stats-content {
+      padding: 15px;
+    }
+
+    .scenario-total-box {
+      background: var(--darkened-bg);
+      border: 1px solid var(--hairline-color);
+      border-radius: 4px;
+      margin-bottom: 15px;
+      padding: 10px 12px;
+      color: var(--body-fg);
+      font-weight: 600;
+    }
+
+    .scenario-category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .scenario-category-card {
+      background: var(--body-bg);
+      border: 1px solid var(--hairline-color);
+      border-left: 4px solid var(--primary);
+      border-radius: 4px;
+      padding: 12px;
+    }
+
+    .scenario-category-name {
+      color: var(--body-fg);
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    .scenario-category-metric {
+      color: var(--body-quiet-color);
+    }
+
+    @media (max-width: 767px) {
+      .scenario-stats-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .scenario-stats-action {
+        white-space: normal;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+    {% if show_statistics and has_profiles %}
+    <!-- Statistik-Panel: Zeigt Übersichtsdaten zu den zugewiesenen Profilen -->
+    <div class="scenario-stats-wrapper">
+        <div class="scenario-stats-panel">
+            <div class="scenario-stats-header">
+                <h3 class="scenario-stats-title">
+                    Übersicht der zugewiesenen Profile
+                </h3>
+                <form method="post" action="{% url 'admin:scenario-generate-overview' object_id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="button scenario-stats-action">Verletztenübersicht erstellen</button>
+                </form>
+            </div>
+
+            <div class="scenario-stats-content">
+                <div class="scenario-total-box">
+                    Gesamtanzahl der Profile: {{ total_profiles }}
+                </div>
+
+                <div class="scenario-category-grid">
+                    {% for stat in category_statistics %}
+                    <div class="scenario-category-card">
+                        <div class="scenario-category-name">{{ stat.category }}</div>
+                        <div class="scenario-category-metric">{{ stat.count }} Profile ({{ stat.percentage|floatformat:1 }}%)</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Einfügen des Inhalts der Elterntemplate -->
+    {{ block.super }}
+{% endblock %}
+
+<!-- Anpassung der oberen Speichern-Buttons -->
+{% block submit_buttons_top %}
+  <div class="submit-row">
+    <input type="submit" value="{% trans 'Save' %}" class="default" name="_save" />
+  </div>
+{% endblock %}
+
+<!-- Anpassung der unteren Speichern-Buttons -->
+{% block submit_buttons_bottom %}
+  <div class="submit-row">
+    <input type="submit" value="{% trans 'Save' %}" class="default" name="_save" />
+  </div>
+{% endblock %}

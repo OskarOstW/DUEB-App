@@ -1,0 +1,90 @@
+# ============================================================
+# DUEB App — Caddy-Konfiguration
+# Automatisches HTTPS; Domain aus der Umgebung.
+# Single-Origin: PWA unter / und /login, Verwaltung unter /admin.
+# ============================================================
+{
+	# Optionale Kontaktadresse für den Zertifikatsanbieter.
+	# Optional: email betreiber@example.org
+}
+
+# Container-local readiness checks both Caddy and the upstream database connection.
+http://127.0.0.1:8081 {
+	bind 127.0.0.1
+	handle /ready {
+		rewrite * /api/ready/
+		reverse_proxy backend:8000 {
+			header_up Host {$DOMAIN}
+			header_up X-Forwarded-Proto https
+		}
+	}
+}
+
+# Die Domain kommt aus der ENV-Variable DOMAIN (z. B. dueb.meine-domain.de).
+# Für lokale Tests DOMAIN=localhost setzen -> Caddy nutzt seine interne CA.
+{$DOMAIN} {
+	# Standard: Caddy holt automatisch ein Let's-Encrypt-Zertifikat (nichts zu tun).
+	# Eigene/behoerdliche Zertifikate (z. B. DFN-PKI): die folgende tls-Zeile
+	# einkommentieren und fullchain.pem + privkey.pem in den Ordner ./certs legen
+	# (wird nach /certs in den Container gemountet).
+	# tls /certs/fullchain.pem /certs/privkey.pem
+	request_body {
+		max_size 50MB
+	}
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy same-origin
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+	}
+	encode zstd gzip
+
+	# ---- Django-Backend (Gunicorn) ----
+	handle /api/* {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+	@administration path /admin /admin/* /django-admin /django-admin/*
+	handle @administration {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# ---- Von Django gesammelte Static-Dateien (Admin-Assets) ----
+	handle_path /static/* {
+		root * /srv-static
+		file_server
+	}
+
+	# ---- Hochgeladene Media-Dateien (Galerie, Bilder) ----
+	handle /media/* {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+	handle /_nested_admin/* {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# ---- PWA (statisches Bundle) mit SPA-Fallback ----
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	# ---- Cache-Header ----
+	# Service Worker + Manifest nie cachen (sonst hängt die App auf alter Version).
+	@nocache path /sw.js /manifest.webmanifest
+	header @nocache Cache-Control "no-cache, no-store, must-revalidate"
+	# index.html nur kurz cachen.
+	@html path / /index.html
+	header @html Cache-Control "no-cache"
+	# Gehashte Assets dürfen sehr lange gecacht werden.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+}

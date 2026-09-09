@@ -1,0 +1,210 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/widgets.css" %}">
+<style type="text/css">
+  /* Stil für einen festen Bereich für die Empfänger-Auswahl */
+  .observers-list-container {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    width: 100%;
+    background: var(--body-bg);
+    border: 1px solid var(--hairline-color);
+    border-radius: 4px;
+  }
+
+  .observer-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hairline-color);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .observer-item:last-child {
+    border-bottom: none;
+  }
+
+  .observer-item:hover {
+    background-color: var(--selected-row, var(--darkened-bg));
+  }
+
+  .observer-email {
+    color: var(--body-quiet-color);
+    font-size: 13px;
+    font-weight: 500;
+    margin-left: 29px;
+    margin-top: 2px;
+  }
+
+  .selection-buttons {
+    margin-bottom: 8px;
+  }
+
+  .selection-buttons button {
+    margin-right: 5px;
+  }
+
+  /* Fix für die Module-Darstellung */
+  .module {
+    margin-bottom: 20px;
+  }
+
+  /* E-Mail-Text-Feld */
+  #id_email_text {
+    height: 300px;
+    width: 100%;
+  }
+
+  /* Checkboxes styling */
+  .observer-checkbox {
+    margin-right: 8px;
+  }
+
+  /* Für bessere Lesbarkeit im dunklen Theme */
+  .observer-name {
+    color: var(--body-fg);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .observer-item label {
+    display: inline-block;
+    width: 100%;
+    cursor: pointer;
+  }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+  &rsaquo; <a href="{% url 'admin:app_list' app_label=app_label %}">{{ opts.app_config.verbose_name }}</a>
+  &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% if messages %}
+  <ul class="messagelist">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  <form method="post" id="email_form" novalidate>
+    {% csrf_token %}
+
+    <!-- E-Mail-Empfänger -->
+    <div class="module">
+      <h2>E-Mail-Empfänger</h2>
+      <div class="form-row">
+        <p>Wählen Sie die Beobachter aus, die eine E-Mail erhalten sollen.</p>
+
+        <div class="selection-buttons">
+          <button type="button" id="select-all" class="button">Alle auswählen</button>
+          <button type="button" id="select-none" class="button">Keine auswählen</button>
+        </div>
+
+        <div class="observers-list-container">
+          {% for observer in observers|dictsort:"last_name" %}
+          <div class="observer-item">
+            <label>
+              <input type="checkbox"
+                     class="observer-checkbox"
+                     name="selected_observers"
+                     value="{{ observer.id }}"
+                     {% if observer in config.selected_observers.all %}checked{% endif %}>
+              <span class="observer-name"><strong>{{ observer.last_name }}, {{ observer.first_name }}</strong></span>
+            </label>
+            <div class="observer-email">{{ observer.email }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- E-Mail-Inhalt -->
+    <div class="module">
+      <h2>E-Mail-Inhalt</h2>
+      <div class="form-row">
+        <p>
+          <strong>Verfügbare Platzhalter:</strong>
+          <code>{name}</code> - Vollständiger Name des Beobachters,
+          <code>{username}</code> - Benutzername für die Anmeldung,
+          <code>{password}</code> - Passwort für die Anmeldung,
+          <code>{login_url}</code> - Link zur Anmeldeseite
+        </p>
+        <p>
+          <strong>Hinweis:</strong> Beim Versand wird für jeden ausgewählten
+          Beobachter ein <em>neues</em> Passwort erzeugt und in die E-Mail
+          eingesetzt; gespeichert wird es nur gehasht. Bereits vorbereitete
+          Geräte danach ggf. neu synchronisieren.
+        </p>
+
+        <div class="field-box">
+          <label for="id_subject">{{ form.subject.label }}:</label>
+          {{ form.subject }}
+          {% if form.subject.errors %}
+          <p class="errors">{{ form.subject.errors }}</p>
+          {% endif %}
+        </div>
+
+        <div class="field-box">
+          <label for="id_email_text">{{ form.email_text.label }}:</label>
+          {{ form.email_text }}
+          {% if form.email_text.errors %}
+          <p class="errors">{{ form.email_text.errors }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <input type="hidden" name="send_token" value="{{ send_token }}" />
+    <div class="submit-row">
+      <input type="submit" value="Konfiguration speichern" name="_save" class="default" />
+      <input type="submit" value="E-Mails senden" name="_send_emails" />
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', function() {
+    // Button "Alle auswählen"
+    document.getElementById('select-all').addEventListener('click', function() {
+      var checkboxes = document.querySelectorAll('.observer-checkbox');
+      for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = true;
+      }
+    });
+
+    // Button "Keine auswählen"
+    document.getElementById('select-none').addEventListener('click', function() {
+      var checkboxes = document.querySelectorAll('.observer-checkbox');
+      for (var i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = false;
+      }
+    });
+
+    // Klick auf die gesamte Zeile zum Umschalten der Checkbox
+    var observerItems = document.querySelectorAll('.observer-item');
+    for (var i = 0; i < observerItems.length; i++) {
+      observerItems[i].addEventListener('click', function(e) {
+        if (e.target.tagName !== 'INPUT') {
+          var checkbox = this.querySelector('input[type="checkbox"]');
+          checkbox.checked = !checkbox.checked;
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

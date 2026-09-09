@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Alphabet used by the random password generator"
+regexTarget = "line"
+regexes = ['''PASSWORD_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"''']
+
+[[allowlists]]
+description = "Go module SHA-256 checksums"
+regexTarget = "line"
+regexes = ['''(?m)^[+-]?[a-zA-Z0-9./!_-]+ v[0-9][^ \r\n]* h1:[A-Za-z0-9+/]{43}=\r?$''']

@@ -1,0 +1,9 @@
+Django>=5.2,<5.3
+djangorestframework
+django-cors-headers
+django-nested-admin
+psycopg2-binary
+python-decouple
+openpyxl
+Pillow
+gunicorn
